@@ -1,0 +1,6 @@
+obj
+bin
+*.as3proj
+.actionScriptProperties
+.settings
+.project
