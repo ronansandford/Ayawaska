@@ -61,8 +61,16 @@ package as3.ayawaska.engine.renderer.bitmap
 						position.y = spriteSourceSize.y;
 						bitmapData.copyPixels(spriteSheet, rectangle, position);
 						
+						var referencePoint : Point = new Point(bitmapData.width / 2, bitmapData.height / 2);
+						if (info["referencePoint"])
+						{
+							referencePoint.x = info["referencePoint"].x;
+							referencePoint.y = info["referencePoint"].y;
+						}
+						
+						
 						// TODO : generate rotations as option
-						_states[stateName][frameCounter][rotationCounter] = bitmapData;
+						_states[stateName][frameCounter][rotationCounter] = new BitmapFrame(bitmapData, referencePoint);
 						rotationCounter ++;
 					}
 					frameCounter ++;
@@ -70,7 +78,7 @@ package as3.ayawaska.engine.renderer.bitmap
 			}
 		}
 		
-		public function getBitmapData(state:String = "default", stateLifeTime:uint = 0, rotation:Number = 0):BitmapData
+		public function getBitmapFrame(state:String = "default", stateLifeTime:uint = 0, rotation:Number = 0):BitmapFrame
 		{
 			var frames : Array = _states[state];
 			

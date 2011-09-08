@@ -101,6 +101,7 @@ package as3.ayawaska.engine.renderer.bitmap
 			
 			mainLoader.onError.add(
 				function(signal : LoaderSignal) : void {
+					trace(signal);
 					callback();
 				});
 			

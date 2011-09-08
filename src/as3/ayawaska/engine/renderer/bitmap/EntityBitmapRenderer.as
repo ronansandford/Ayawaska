@@ -55,9 +55,14 @@ package as3.ayawaska.engine.renderer.bitmap
 		}
 		
 		
+		private function get bitmapFrame() : BitmapFrame
+		{
+			return _animatedBitmap.getBitmapFrame(_entity.state, _entity.stateLifeTime, _entity.rotation);
+		}
+		
 		private function get bitmapData() : BitmapData
 		{
-			return _animatedBitmap.getBitmapData(_entity.state, _entity.stateLifeTime, _entity.rotation);
+			return bitmapFrame.bitmapData;
 		}
 		
 		public function copyTo(destination:BitmapData):void 
@@ -71,10 +76,8 @@ package as3.ayawaska.engine.renderer.bitmap
 		
 		public function updatePosition(x:Number, y:Number):void 
 		{
-			// TODO : registration should be set in the asset metadata
-			// for now default to center (should be moved into the AnimatedBitmap probably)
-			_position.x = x - (bitmapData.rect.width / 2) ;
-			_position.y = y - (bitmapData.rect.width / 2) ;
+			_position.x = x - bitmapFrame.referencePoint.x;
+			_position.y = y - bitmapFrame.referencePoint.y;
 		}
 		
 		public function hitTest(position:Point): Boolean
