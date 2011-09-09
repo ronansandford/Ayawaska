@@ -18,7 +18,6 @@ Copyright 2011 Ronan Sandford
 */
 package as3.ayawaska.test 
 {
-	import as3.ayawaska.engine.core.CollisionManager;
 	import as3.ayawaska.engine.core.Entity;
 	import as3.ayawaska.engine.world.twodimensions.Entity2D;
 	import as3.ayawaska.engine.world.twodimensions.SampleEntityType;
@@ -29,9 +28,9 @@ package as3.ayawaska.test
 		
 		private var _hero : TestEntity;
 		
-		public function TestWorld(collisionManager : CollisionManager, width : uint, height : uint) 
+		public function TestWorld(width : uint, height : uint) 
 		{
-			super(collisionManager, width, height);
+			super(width, height);
 			
 			/*
 			for (var i : int = 0; i < 1000; i++)

@@ -27,7 +27,6 @@ package
 	import as3.ayawaska.engine.renderer.bitmap.EntityBitmapRendererFactory;
 	import as3.ayawaska.engine.renderer.displaylist.DisplayListRenderer;
 	import as3.ayawaska.engine.renderer.MouseEnabledRenderer2D;
-	import as3.ayawaska.engine.world.twodimensions.SampleCollisionManager;
 	import as3.ayawaska.engine.world.twodimensions.SampleWorld2D;
 	import as3.ayawaska.test.TestWorld;
 	import flash.display.Bitmap;
@@ -59,7 +58,7 @@ package
 			
 			bitmapManager = new BitmapManager();
 			
-			var world : SampleWorld2D = new SampleWorld2D(new SampleCollisionManager(), stage.stageWidth * 2, stage.stageHeight * 2);
+			var world : SampleWorld2D = new SampleWorld2D(stage.stageWidth * 2, stage.stageHeight * 2);
 			world.setup();
 
 			var renderer : MouseEnabledRenderer2D = new BitmapRenderer(world, bitmap, new EntityBitmapRendererFactory(bitmapManager));

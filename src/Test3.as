@@ -29,7 +29,6 @@ package
 	import as3.ayawaska.engine.renderer.molehill.twodimensions.EntityMolehill2DRendererFactory;
 	import as3.ayawaska.engine.renderer.molehill.twodimensions.Molehill2DRenderer;
 	import as3.ayawaska.engine.renderer.MouseEnabledRenderer2D;
-	import as3.ayawaska.engine.world.twodimensions.SampleCollisionManager;
 	import as3.ayawaska.engine.world.twodimensions.SampleWorld2D;
 	import as3.ayawaska.test.TestWorld;
 	import flash.display.Bitmap;
@@ -56,7 +55,7 @@ package
 			
 			//bitmapManager = new BitmapManager();
 			
-			var world : SampleWorld2D = new SampleWorld2D(new SampleCollisionManager(), stage.stageWidth * 2, stage.stageHeight * 2);
+			var world : SampleWorld2D = new SampleWorld2D(stage.stageWidth * 2, stage.stageHeight * 2);
 			world.setup();
 
 			var renderer : MouseEnabledRenderer2D = new Molehill2DRenderer(stage, world, new EntityMolehill2DRendererFactory());

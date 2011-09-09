@@ -18,25 +18,21 @@ Copyright 2011 Ronan Sandford
 */
 package as3.ayawaska.engine.world.twodimensions 
 {
-	import as3.ayawaska.engine.core.CollisionManager;
 	import as3.ayawaska.engine.core.Entity;
 	import as3.ayawaska.engine.core.EntityType;
 	import flash.geom.Rectangle;
 
 	public class SampleWorld2D implements World2D 
-	{
-		private var _collisionManager : CollisionManager;
-		
+	{	
 		protected var _entities : Vector.<Vector.<Entity>>; // a 2d world contain 2d slots
 		
 		private var _width : int;
 		private var _height : int;
 		private var _focusArea : Rectangle;
 		
-		public function SampleWorld2D(collisionManager : CollisionManager, width : uint, height : uint) 
+		public function SampleWorld2D(width : uint, height : uint) 
 		{
 			_entities = new Vector.<Vector.<Entity>>();
-			_collisionManager = collisionManager;
 			
 			_width = width;
 			_height = height;
