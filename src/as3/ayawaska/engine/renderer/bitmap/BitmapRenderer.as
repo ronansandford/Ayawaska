@@ -50,9 +50,12 @@ package as3.ayawaska.engine.renderer.bitmap
 		
 		public function update(milisecondStep : int) : void
 		{
+			var bitmapData : BitmapData = _display.bitmapData;
+			var bitmapDataRect : Rectangle = bitmapData.rect;
+			
 			//clear the display // could potentially check whether things have changed and update only these
-			_display.bitmapData.lock();
-			_display.bitmapData.fillRect(_display.bitmapData.rect, 0x000000);
+			bitmapData.lock();
+			bitmapData.fillRect(bitmapDataRect, 0x000000);
 			
 			// re initialize
 			_entityUnderMouse = null;
@@ -77,7 +80,7 @@ package as3.ayawaska.engine.renderer.bitmap
 
 					if (_display.bitmapData.rect.intersects(rectangle)) // will only render if it fits into (intersects) the display
 					{
-						renderer.copyTo(_display.bitmapData);
+						renderer.copyTo(bitmapData);
 						
 						_position.x = _display.mouseX;
 						_position.y = _display.mouseY;
@@ -89,13 +92,11 @@ package as3.ayawaska.engine.renderer.bitmap
 							}
 						}
 					}
-					
-					
 				}
 				layerCounter ++;
 			}
 			
-			_display.bitmapData.unlock();
+			bitmapData.unlock();
 		}
 		
 		public function getEntityUnderMouse() : Entity

@@ -20,15 +20,36 @@ package as3.ayawaska.engine.renderer.bitmap
 {
 	import flash.display.BitmapData;
 	import flash.geom.Point;
+	import flash.geom.Rectangle;
 	public class BitmapFrame 
 	{
 		private var _bitmapData:BitmapData;
 		private var _referencePoint:Point;
+		private var _bitmapDataRectangle:Rectangle;
+		private var _originalPosition:Point;
 		
-		public function BitmapFrame(bitmapData : BitmapData, referencePoint : Point) 
+		public function BitmapFrame(bitmapData : BitmapData, referencePoint : Point, bitmapDataRectangle : Rectangle = null, originalPosition : Point = null) 
 		{
 			_bitmapData = bitmapData;
-			_referencePoint = referencePoint;
+			_referencePoint = referencePoint.clone();;
+			
+			if (bitmapDataRectangle == null)
+			{
+				_bitmapDataRectangle = _bitmapData.rect.clone(); 
+			}
+			else
+			{
+				_bitmapDataRectangle = bitmapDataRectangle.clone();;
+			}
+			
+			if (originalPosition == null)
+			{
+				_originalPosition = new Point(0, 0);
+			}
+			else
+			{
+				_originalPosition = originalPosition.clone();
+			}
 		}
 		
 		public function get bitmapData() : BitmapData
@@ -40,6 +61,39 @@ package as3.ayawaska.engine.renderer.bitmap
 		{
 			return _referencePoint;
 		}
+		
+		public function get bitmapDataRectangle() : Rectangle
+		{
+			return _bitmapDataRectangle;
+		}
+		
+		public function get originalPosition() : Point
+		{
+			return _originalPosition;
+		}
+		
+		public function copyTo(bitmapData : BitmapData, position : Point) : void
+		{
+			bitmapData.copyPixels(_bitmapData, _bitmapDataRectangle, position.add(_originalPosition).subtract(_referencePoint));
+		}
+		
+		public function hitTest(position:Point, position1:Point): Boolean
+		{
+			var positionInBitmapData : Point = new Point(_bitmapDataRectangle.x, _bitmapDataRectangle.y);
+			return _bitmapData.hitTest(position.add(_originalPosition).subtract(_referencePoint), 0, position1.add(positionInBitmapData));
+		}
+		
+		public function getArea(position:Point):Rectangle 
+		{
+			var rectangle : Rectangle = new Rectangle();
+			rectangle.x = position.x + _originalPosition.x - _referencePoint.x;
+			rectangle.y = position.y + _originalPosition.y - _referencePoint.y;
+			rectangle.width = _bitmapDataRectangle.width;
+			rectangle.height = _bitmapDataRectangle.height;
+			return rectangle
+		}
+		
+		
 		
 	}
 

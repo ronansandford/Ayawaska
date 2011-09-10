@@ -47,11 +47,7 @@ package as3.ayawaska.engine.renderer.bitmap
 		
 		public function get area() : Rectangle
 		{
-			_rectangle.x = _position.x;
-			_rectangle.y = _position.y;
-			_rectangle.width = bitmapData.rect.width;
-			_rectangle.height = bitmapData.rect.height;
-			return _rectangle;
+			return bitmapFrame.getArea(_position);
 		}
 		
 		
@@ -60,14 +56,9 @@ package as3.ayawaska.engine.renderer.bitmap
 			return _animatedBitmap.getBitmapFrame(_entity.state, _entity.stateLifeTime, _entity.rotation);
 		}
 		
-		private function get bitmapData() : BitmapData
-		{
-			return bitmapFrame.bitmapData;
-		}
-		
 		public function copyTo(destination:BitmapData):void 
 		{	
-			destination.copyPixels(bitmapData, bitmapData.rect, _position);
+			bitmapFrame.copyTo(destination, _position);
 			if (_selected)
 			{
 				//destination.colorTransform(area, new ColorTransform(1, 0, 0, 1, 0, 0, 0, 0));
@@ -76,13 +67,13 @@ package as3.ayawaska.engine.renderer.bitmap
 		
 		public function updatePosition(x:Number, y:Number):void 
 		{
-			_position.x = x - bitmapFrame.referencePoint.x;
-			_position.y = y - bitmapFrame.referencePoint.y;
+			_position.x = x;
+			_position.y = y;
 		}
 		
 		public function hitTest(position:Point): Boolean
 		{
-			return bitmapData.hitTest(_position, 0, position);
+			return bitmapFrame.hitTest(_position, position);
 		}
 		
 		public function get selected() : Boolean

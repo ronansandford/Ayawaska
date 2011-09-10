@@ -49,7 +49,6 @@ package as3.ayawaska.engine.renderer.bitmap
 					for each(var info : Object in frameArray)
 					{
 						var sourceSize : Object = info.sourceSize;
-						var bitmapData : BitmapData = new BitmapData(sourceSize.w, sourceSize.h, true, 0x00000000);
 						
 						var frame : Object = info.frame;
 						var spriteSourceSize : Object = info.spriteSourceSize;
@@ -59,9 +58,8 @@ package as3.ayawaska.engine.renderer.bitmap
 						rectangle.height = frame.h;
 						position.x = spriteSourceSize.x;
 						position.y = spriteSourceSize.y;
-						bitmapData.copyPixels(spriteSheet, rectangle, position);
 						
-						var referencePoint : Point = new Point(bitmapData.width / 2, bitmapData.height / 2);
+						var referencePoint : Point = new Point(info.sourceSize.w / 2, info.sourceSize.h / 2);
 						if (info["referencePoint"])
 						{
 							referencePoint.x = info["referencePoint"].x;
@@ -70,7 +68,7 @@ package as3.ayawaska.engine.renderer.bitmap
 						
 						
 						// TODO : generate rotations as option
-						_states[stateName][frameCounter][rotationCounter] = new BitmapFrame(bitmapData, referencePoint);
+						_states[stateName][frameCounter][rotationCounter] = new BitmapFrame(spriteSheet, referencePoint, rectangle, position);
 						rotationCounter ++;
 					}
 					frameCounter ++;
@@ -81,6 +79,12 @@ package as3.ayawaska.engine.renderer.bitmap
 		public function getBitmapFrame(state:String = "default", stateLifeTime:uint = 0, rotation:Number = 0):BitmapFrame
 		{
 			var frames : Array = _states[state];
+			
+			if (frames == null)
+			{
+				//trace("no frames exist for state " + state + ", use default instead");
+				frames = _states["default"];
+			}
 			
 			var numFrames : uint = frames.length;
 			var interval : Number = 1000 / _generalAnimationSpeed;

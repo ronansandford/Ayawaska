@@ -46,8 +46,8 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 	
 	public class Molehill2DRenderer implements MouseEnabledRenderer2D 
 	{
-		private var _width:Number = 640;
-		private var _height:Number = 480;
+		private var _width:Number = 700;
+		private var _height:Number = 600;
 		
 		private var _context3D:Context3D;
 		private var _shaderProgram:Program3D;
@@ -64,7 +64,7 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 		private var _stage: Stage;
 		
 		
-		public function Molehill2DRenderer(stage : Stage, world : World2D, entityRendererFactory : EntityMolehill2DRendererFactory) 
+		public function Molehill2DRenderer(stage : Stage, width : uint, height : uint, world : World2D, entityRendererFactory : EntityMolehill2DRendererFactory) 
 		{
 			_ready = false;
 			
@@ -76,8 +76,8 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 			stage.scaleMode = StageScaleMode.NO_SCALE;
             stage.align = StageAlign.TOP_LEFT;
 			
-			_width = stage.stageWidth;
-			_height = stage.stageHeight;
+			_width = width;
+			_height = height;
 			
 			var stage3D:Stage3D = stage.stage3Ds[0];
 			stage3D.addEventListener(Event.CONTEXT3D_CREATE, initialize);

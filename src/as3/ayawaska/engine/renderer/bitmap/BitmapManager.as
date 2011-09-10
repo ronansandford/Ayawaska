@@ -19,11 +19,13 @@ Copyright 2011 Ronan Sandford
 package as3.ayawaska.engine.renderer.bitmap 
 {
 	import flash.display.BitmapData;
+	import flash.geom.Point;
 	import flash.utils.Dictionary;
 	import org.assetloader.AssetLoader;
 	import org.assetloader.base.Param;
 	import org.assetloader.core.IAssetLoader;
 	import org.assetloader.core.ILoader;
+	import org.assetloader.signals.ErrorSignal;
 	import org.assetloader.signals.LoaderSignal;
 
 	public class BitmapManager 
@@ -71,12 +73,12 @@ package as3.ayawaska.engine.renderer.bitmap
 			var mainLoader : AssetLoader = new AssetLoader();
 			
 			// Child loaders will inherit params.
-			mainLoader.setParam(Param.BASE, "assets/");
+			mainLoader.setParam(Param.BASE, "file:///C:/Development/GJAM/TheSecretOfAlchemy/trunk/bin/assets/");
 			
 			for each(var name : String in names)
 			{
 				var subLoader : AssetLoader = new AssetLoader(name);
-				subLoader.setParam(Param.BASE, "assets/");
+				subLoader.setParam(Param.BASE, "file:///C:/Development/GJAM/TheSecretOfAlchemy/trunk/bin/assets/");
 				subLoader.addLazy("bitmap", name + ".png");
 				subLoader.addLazy("info", name + ".json");
 				mainLoader.addLoader(subLoader);
@@ -100,18 +102,83 @@ package as3.ayawaska.engine.renderer.bitmap
 			);
 			
 			mainLoader.onError.add(
-				function(signal : LoaderSignal) : void {
-					trace(signal);
+				function(signal : ErrorSignal) : void {
+					trace(signal.message);
 					callback();
 				});
 			
 			mainLoader.onChildError.add(
-				function(signal : LoaderSignal, loader : ILoader) : void {
-					trace(signal);
+				function(signal : ErrorSignal, loader : ILoader) : void {
+					trace(signal.message);
 				});
 				
 			mainLoader.start();
 		}
+		
+		public function constructFullTextureManager() : BitmapManager
+		{
+			var manager : BitmapManager = new BitmapManager();
+			
+			
+			var bitmapFrame : BitmapFrame;
+			var name : String;
+			
+			var maxHeight : uint = 0;
+			var maxWidth : uint = 0;
+			for (name in _animatedBitmaps)
+			{
+				bitmapFrame = AnimatedBitmap(_animatedBitmaps[name]).getBitmapFrame("default", 0, 0)
+				
+				maxWidth = Math.max(maxWidth, bitmapFrame.bitmapDataRectangle.width);
+				maxHeight = Math.max(maxHeight, bitmapFrame.bitmapDataRectangle.height);
+			}
+			
+			var diagonal : uint = Math.ceil(Math.sqrt(_animatedBitmaps.length));
+			
+			var combinedBimtapData : BitmapData = new BitmapData(diagonal * maxWidth, diagonal * maxHeight, true, 0x00000000);
+
+			var column : uint = 0;
+			var row : uint = 0;
+			var position : Point = new Point();
+			
+			for (name in _animatedBitmaps)
+			{
+				var animatedBitmap : AnimatedBitmap = _animatedBitmaps[name] as AnimatedBitmap;
+				bitmapFrame = animatedBitmap.getBitmapFrame("default", 0, 0)
+			
+				if (column * maxWidth + bitmapFrame.bitmapDataRectangle.width > diagonal * maxWidth)
+				{
+					column = 0;
+					row ++;
+				}
+				position.x = column * maxWidth;
+				position.y = row * maxHeight;
+				combinedBimtapData.copyPixels(bitmapFrame.bitmapData, bitmapFrame.bitmapDataRectangle, position);
+				
+				var metadata : Object = new Object;
+				metadata["default"] = new Array();
+				
+				var rotationArray : Array = new Array();
+				
+				var frame : Object = new Object();
+				frame["frame"] = { x:position.x, y:position.y, w: bitmapFrame.bitmapDataRectangle.width, h:bitmapFrame.bitmapDataRectangle.height };
+				frame["spriteSourceSize"] = { x:0, y:0, w:bitmapFrame.bitmapDataRectangle.width, h:bitmapFrame.bitmapDataRectangle.height };
+				frame["sourceSize"] = { w:bitmapFrame.bitmapDataRectangle.width, h:bitmapFrame.bitmapDataRectangle.height };
+				frame["referencePoint"] = { x:bitmapFrame.referencePoint.x, y:bitmapFrame.referencePoint.y };
+			
+				rotationArray.push(frame);
+				
+				metadata["default"].push(rotationArray)
+				
+				manager._animatedBitmaps[name] = new AnimatedBitmap(combinedBimtapData, metadata);
+				
+			}
+			
+			return manager;
+			
+		}
+		
+		
 		
 	}
 

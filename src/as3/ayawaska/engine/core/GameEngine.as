@@ -18,6 +18,7 @@ Copyright 2011 Ronan Sandford
 */
 package as3.ayawaska.engine.core
 {
+	import as3.ayawaska.util.Profiler;
 	import flash.events.TimerEvent;
 	import flash.utils.getTimer;
 	import flash.utils.Timer;
@@ -52,8 +53,13 @@ package as3.ayawaska.engine.core
 			var milisecondStep : int = newMilisecondTime - _lastMilisecondTime;
 			_lastMilisecondTime = newMilisecondTime;
 			
+			Profiler.tick("world");
 			_world.update(milisecondStep);
+			Profiler.tick("world");
+			
+			Profiler.tick("renderer");
 			_renderer.update(milisecondStep);
+			Profiler.tick("renderer");
 		}
 		
 		
