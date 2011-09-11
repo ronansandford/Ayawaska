@@ -58,24 +58,33 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 		private var _context3D:Context3D;
 		private var _shaderProgram:Program3D;
 		
-		private var _vertexBuffer:VertexBuffer3D;
-		private var _indexBuffer:IndexBuffer3D;
-		private var _indices : Vector.<uint>
-		
 		private var _viewMatrix:Matrix3D;
 		private var _ready:Boolean;
-		private var _entityRendererFactory: EntityMolehill2DRendererFactory;
+		protected var _entityRendererFactory: EntityMolehill2DRendererFactory;
 		private var _entityUnderMouse:Entity;
-		private var _world: World2D;
+		protected var _world: World2D;
 		private var _position: Point;
 		private var _stage: Stage;
-		private var _spriteSheetManager:SpriteSheetManager;
+		protected var _spriteSheetManager:SpriteSheetManager;
 		private var _texture:Texture;
-		private var _spriteSheet:SpriteSheet;
-		private var _maxEntitiesNum: uint = 500;
+		protected var _spriteSheet:SpriteSheet;
 		
-		private var _entitiesVertices : Vector.<Number>;
-		private var layer0Done: Boolean;
+		private var _foregroundEntitiesNum: uint;
+		
+		private var _foregroundEntitiesVertices : Vector.<Number>;
+		private var _foregroundVertexBuffer : VertexBuffer3D;
+		
+		private var _foregroundEntitiesIndices: Vector.<Number>;
+		private var _foregroundIndexBuffer : IndexBuffer3D;
+		
+		private var _backgroundEntitiesNum: uint;
+		
+		private var _backgroundEntitiesVertices : Vector.<Number>;
+		private var _backgroundVertexBuffer : VertexBuffer3D;
+		
+		private var _backgroundEntitiesIndices: Vector.<Number>;
+		private var _backgroundIndexBuffer : IndexBuffer3D;
+		private var layer0Done:Boolean;
 		
 		
 		public function Molehill2DRenderer(stage : Stage, width : uint, height : uint, world : World2D, entityRendererFactory : EntityMolehill2DRendererFactory, spriteSheetManager : SpriteSheetManager) 
@@ -167,31 +176,35 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 			_context3D.setDepthTest(false, Context3DCompareMode.NOT_EQUAL);
             _context3D.setBlendFactors(Context3DBlendFactor.SOURCE_ALPHA, Context3DBlendFactor.ONE_MINUS_SOURCE_ALPHA);
 			
-			
-			// since all entities are squares we do not need to upload the indices only one but draw only alimited of them every time
-			_indexBuffer = _context3D.createIndexBuffer(_maxEntitiesNum * 6);
-			_indices = new Vector.<uint>();
-			for (var i : uint  = 0; i < _maxEntitiesNum; i++)
-			{
-				//0, 1, 2, 0, 2, 3
-				_indices.push(i * 4 + 0);
-				_indices.push(i * 4 + 1);
-				_indices.push(i * 4 + 2);
-				_indices.push(i * 4 + 0);
-				_indices.push(i * 4 + 2);
-				_indices.push(i * 4 + 3);
-			}
-			_indices.fixed = true;
-			_indexBuffer.uploadFromVector(_indices, 0, _indices.length);
-			
+			_foregroundEntitiesVertices = new Vector.<Number>;
+			_backgroundEntitiesVertices = new Vector.<Number>;
 			
 			var assets : Vector.<String> = Vector.<String>(["grass", "grass2", "SmallCluffSnail", "SmallEdSnail", "fire"]);
 			_spriteSheet = _spriteSheetManager.getSpriteSheet(assets);
 			initTexture(_spriteSheet.bitmapData);
 			
 			_ready = true;
+		}
 			
-			_entitiesVertices = new Vector.<Number>(_maxEntitiesNum);
+		private function setupIndices(numEntities:uint):IndexBuffer3D
+		{
+			// since all entities are squares we do not need to upload the indices only one but draw only alimited of them every time
+			var indexBuffer : IndexBuffer3D = _context3D.createIndexBuffer(numEntities * 6);
+			var indices = new Vector.<uint>();
+			for (var i : uint  = 0; i < numEntities; i++)
+			{
+				//0, 1, 2, 0, 2, 3
+				indices.push(i * 4 + 0);
+				indices.push(i * 4 + 1);
+				indices.push(i * 4 + 2);
+				indices.push(i * 4 + 0);
+				indices.push(i * 4 + 2);
+				indices.push(i * 4 + 3);
+			}
+			indices.fixed = true;
+			indexBuffer.uploadFromVector(indices, 0, indices.length);
+			
+			return indexBuffer;
 		}
 		
 		public function initTexture(bitmapData : BitmapData) : void
@@ -209,90 +222,96 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 				return;
 			}
 			
-			
-			Profiler.tick("setVertices");
-			
 			// re initialize
 			_entityUnderMouse = null;
-			
-			
-			var entitiesVerticesByteArray : ByteArray = new ByteArray();
-			var drawnEntitiesNum : uint = 0;
 			
 			var entities : Vector.<Vector.<Entity>> = _world.entities;
 			
 			var focusArea : Rectangle = _world.focusArea;
 			
 			var layerCounter : uint = 0;
+			_foregroundEntitiesNum = 0;
 			for each(var layer : Vector.<Entity> in entities)
 			{
 				if (layerCounter == 0)
 				{
-					if (layer0Done) 
+					if (layer0Done)
 					{
 						layerCounter ++;
-						continue;
+						continue
 					}
-					//else layer0Done = true;
+					layer0Done = true
+					
+					for each (var entity : Entity2D in layer)
+					{	
+						
+						var backgroundRenderer : EntityMolehill2DRenderer = _entityRendererFactory.getEntityRenderer(entity);
+						backgroundRenderer.updateVertices(_backgroundEntitiesVertices, _backgroundEntitiesNum);
+						
+						_backgroundEntitiesNum++;
+					}
+					
+					
+					
+					
+					_backgroundVertexBuffer = setupVertices(_backgroundEntitiesVertices);
+					_backgroundIndexBuffer = setupIndices(_backgroundEntitiesNum);
+					
+					layerCounter ++;
+					continue
+					
 				}
 				for each (var entity : Entity2D in layer)
-				{
-					//Profiler.tick("setupEntityRenderer");
-					
-					var xOffset : Number = entity.area.x - focusArea.x;
-					var yOffset : Number = entity.area.y - focusArea.y;
+				{	
 					
 					var renderer : EntityMolehill2DRenderer = _entityRendererFactory.getEntityRenderer(entity);
-					renderer.updatePosition(xOffset, yOffset);
+					renderer.updateVertices(_foregroundEntitiesVertices, _foregroundEntitiesNum);
 					
-					var rectangle : Rectangle = renderer.area
-				
-					//Profiler.tick("setupEntityRenderer");
+					_foregroundEntitiesNum++;
 					
-					if (rectangle.x > -rectangle.width && rectangle.x < _width && rectangle.y > -rectangle.height && rectangle.y < _height ) // will only render if it fits into (intersects) the display
+					
+					_position.x = _stage.mouseX + focusArea.x;
+					_position.y = _stage.mouseY + focusArea.y;
+					if (layerCounter > 0 && renderer.hitTest(_position))// do not consider the first layer as clickable/overable (TODO : make it configurable)
 					{
-						//Profiler.tick("addVertices");
-						//entitiesVertices = entitiesVertices.concat(renderer.getVertices());
-						renderer.updateVertices(_entitiesVertices, drawnEntitiesNum);
-						//var verticesByteArray : ByteArray = renderer.getVerticesByteArray();
-						//entitiesVerticesByteArray.writeBytes(verticesByteArray);
-						//Profiler.tick("addVertices");
-						
-						drawnEntitiesNum++;
-						
-						//Profiler.tick("mouseOver");
-						_position.x = _stage.mouseX;
-						_position.y = _stage.mouseY;
-						if (layerCounter > 0 && rectangle.containsPoint(_position))// do not consider the first layer as clickable/overable (TODO : make it configurable)
-						{
-							if (renderer.hitTest(_position))
-							{
-								_entityUnderMouse = entity;
-							}
-						}
-						//Profiler.tick("mouseOver");
+						_entityUnderMouse = entity;
 					}
-					
 					
 				}
 				layerCounter ++;
 			}
 			
-			Profiler.tick("setVertices");
+			_context3D.clear();
 			
-			//Profiler.traceTotal("addVertices");
-			//Profiler.reset("addVertices");
+			_viewMatrix = new Matrix3D();
+
+			_viewMatrix.appendTranslation( -(_width * 0.5), -(_height * 0.5) , 0);
+            _viewMatrix.appendScale( 1 / (_width * 0.5), -1 / (_height * 0.5), 1 );
+			_viewMatrix.appendTranslation( -focusArea.x/(_width * 0.5), focusArea.y/(_height * 0.5) , 0);
+		
+			_context3D.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, _viewMatrix, true);
 			
-			//Profiler.traceTotal("mouseOver");
-			//Profiler.reset("mouseOver");
+			draw(_backgroundVertexBuffer, _backgroundIndexBuffer, _backgroundEntitiesNum);
+			
+			_foregroundVertexBuffer = setupVertices(_foregroundEntitiesVertices);
+			
+			_foregroundIndexBuffer = setupIndices(_foregroundEntitiesNum);
+			
+			draw(_foregroundVertexBuffer, _foregroundIndexBuffer, _foregroundEntitiesNum);
 			
 			
 			
-			Profiler.tick("setBuffers");
-			_vertexBuffer = _context3D.createVertexBuffer(_entitiesVertices.length /4, 4);
-			_vertexBuffer.uploadFromVector(
-				_entitiesVertices
-				, 0, _entitiesVertices.length /4
+			
+			
+			_context3D.present();
+		}
+		
+		private function setupVertices(vertices:Vector.<Number>): VertexBuffer3D 
+		{
+			var vertexBuffer : VertexBuffer3D  = _context3D.createVertexBuffer(vertices.length /4, 4);
+			vertexBuffer.uploadFromVector(
+				vertices
+				, 0, vertices.length /4
 			);
 			
 			//_vertexBuffer = _context3D.createVertexBuffer(drawnEntitiesNum * 4, 4);
@@ -301,23 +320,15 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 			//				, 0, 0, drawnEntitiesNum * 4
 			//			);
 			
+			return vertexBuffer;
+		}
+		
+		private function draw(vertexBuffer : VertexBuffer3D, indexBuffer : IndexBuffer3D, numEntities : uint) : void
+		{
+			_context3D.setVertexBufferAt(0, vertexBuffer, 0, Context3DVertexBufferFormat.FLOAT_2); //xy
+			_context3D.setVertexBufferAt(1, vertexBuffer, 2, Context3DVertexBufferFormat.FLOAT_2); //uv
 			
-			_context3D.setVertexBufferAt(0, _vertexBuffer, 0, Context3DVertexBufferFormat.FLOAT_2); //xy
-			_context3D.setVertexBufferAt(1, _vertexBuffer, 2, Context3DVertexBufferFormat.FLOAT_2); //uv
-			
-			_indexBuffer = _context3D.createIndexBuffer(drawnEntitiesNum * 6);
-			_indexBuffer.uploadFromVector(_indices.slice(0, drawnEntitiesNum * 6), 0, drawnEntitiesNum * 6);
-			
-			Profiler.tick("setBuffers");
-			
-			Profiler.tick("drawTriangles");
-			_context3D.clear();
-			_context3D.drawTriangles(_indexBuffer, 0, drawnEntitiesNum * 2); // since all entities are squares we do not need to upload a new indices vectro every time
-			_context3D.present();
-			Profiler.tick("drawTriangles");
-			
-			
-			//Profiler.tick("context3d");
+			_context3D.drawTriangles(indexBuffer, 0, numEntities * 2);
 		}
 		
 		//interface
@@ -342,6 +353,12 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 		public function unselect(entity:Entity):void 
 		{
 			
+		}
+		
+		public function changeWorld(newWorld : World2D) : void
+		{
+			_world = newWorld;
+			layer0Done = false;
 		}
 		
 	}

@@ -42,6 +42,11 @@ package as3.ayawaska.engine.renderer.displaylist
 			_entityRenderers = new Dictionary(true); // use weak keys so that when the slot are garbage collected they are not attempted to be rendered
 		}
 		
+		public function changeWorld(newWorld : World2D) : void
+		{
+			_world = newWorld;
+		}
+		
 		public function update(milisecondStep : int) : void
 		{
 			var entities : Vector.<Vector.<Entity>> = _world.entities;

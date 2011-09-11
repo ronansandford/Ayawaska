@@ -22,6 +22,7 @@ package as3.ayawaska.engine.renderer.bitmap
 	import as3.ayawaska.engine.renderer.MouseEnabledRenderer2D;
 	import as3.ayawaska.engine.world.twodimensions.Entity2D;
 	import as3.ayawaska.engine.world.twodimensions.World2D;
+	
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
 	import flash.geom.Point;
@@ -46,6 +47,11 @@ package as3.ayawaska.engine.renderer.bitmap
 			_entityRendererFactory = entityRendererFactory;
 			
 			_position = new Point();
+		}
+		
+		public function changeWorld(newWorld : World2D) : void
+		{
+			_world = newWorld;
 		}
 		
 		public function update(milisecondStep : int) : void

@@ -39,7 +39,7 @@ package as3.ayawaska.engine.renderer.bitmap
 		{
 			_entity = entity;
 			_animatedBitmap = animatedBitmap;	
-			
+
 			_position = new Point();
 		}
 		

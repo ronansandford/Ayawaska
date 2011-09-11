@@ -34,6 +34,12 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 			_spriteSheet = spriteSheet;
 		}
 		
+		public function reset(spriteSheet : SpriteSheet) : void
+		{
+			_spriteSheet = spriteSheet;
+			_entityRenderers = new Dictionary;
+		}
+		
 		public function getEntityRenderer(entity : Entity2D): EntityMolehill2DRenderer
 		{
 			var renderer : EntityMolehill2DRenderer = _entityRenderers[entity];

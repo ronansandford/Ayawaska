@@ -37,7 +37,8 @@ package as3.ayawaska.engine.renderer.bitmap
 		}
 		
 		
-		public function getSpriteSheet(assetNames : Vector.<String>) : SpriteSheet
+		// TODO : remove fristFrame argument
+		public function getSpriteSheet(assetNames : Vector.<String>, firstFrame : Boolean = false) : SpriteSheet
 		{
 			assetNames.sort(0);
 			var hash : String = SHA1.hash(String(assetNames));
@@ -45,7 +46,7 @@ package as3.ayawaska.engine.renderer.bitmap
 			{
 				return _spritesheets[hash];
 			}
-			var spriteSheet : SpriteSheet = createSpriteSheetFromAnimatedBitmaps(assetNames);
+			var spriteSheet : SpriteSheet = createSpriteSheetFromAnimatedBitmaps(assetNames, firstFrame);
 			if (spriteSheet != null)
 			{
 				_spritesheets[hash] = spriteSheet;
@@ -53,7 +54,8 @@ package as3.ayawaska.engine.renderer.bitmap
 			return spriteSheet;
 		}
 		
-		private function createSpriteSheetFromAnimatedBitmaps(assetNames : Vector.<String>):SpriteSheet 
+		// TODO : remove first frame argument?
+		private function createSpriteSheetFromAnimatedBitmaps(assetNames : Vector.<String>, firstFrame : Boolean = false):SpriteSheet 
 		{
 			if (_bitmapManager == null)
 			{
@@ -83,14 +85,20 @@ package as3.ayawaska.engine.renderer.bitmap
 				allBitmapFrames = animatedBitmap.states;
 				for (state in allBitmapFrames)
 				{
+					var firstFrameCounter : uint = 0;
 					for each(frame in allBitmapFrames[state])
 					{
+						if (firstFrame && firstFrameCounter >=1)
+						{
+							break;
+						}
 						for each(bitmapFrame in frame)
 						{
 							maxWidth = Math.max(maxWidth, bitmapFrame.bitmapDataRectangle.width);
 							maxHeight = Math.max(maxHeight, bitmapFrame.bitmapDataRectangle.height);
 							counter ++;
 						}
+						firstFrameCounter ++;
 					}
 				}
 				
@@ -122,8 +130,13 @@ package as3.ayawaska.engine.renderer.bitmap
 				for (state in allBitmapFrames)
 				{
 					metadata[name][state] = new Array();
+					var firstFrameCounter2 : uint = 0;
 					for each(frame in allBitmapFrames[state])
 					{
+						if (firstFrame && firstFrameCounter2 >=1)
+						{
+							break;
+						}
 						var rotationArray : Array = new Array();
 						
 						for each(bitmapFrame in frame)
@@ -151,6 +164,7 @@ package as3.ayawaska.engine.renderer.bitmap
 							
 							column ++;
 						}
+						firstFrameCounter2++;
 					}
 				}
 								
