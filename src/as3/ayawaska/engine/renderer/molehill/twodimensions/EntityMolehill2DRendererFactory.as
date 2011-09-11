@@ -18,16 +18,20 @@ Copyright 2011 Ronan Sandford
 */
 package as3.ayawaska.engine.renderer.molehill.twodimensions 
 {
+	import as3.ayawaska.engine.renderer.bitmap.AnimatedBitmap;
+	import as3.ayawaska.engine.renderer.bitmap.SpriteSheet;
 	import as3.ayawaska.engine.world.twodimensions.Entity2D;
 	import flash.utils.Dictionary;
 
 	public class EntityMolehill2DRendererFactory 
 	{
 		private var _entityRenderers: Dictionary;
+		private var _spriteSheet:SpriteSheet;
 		
-		public function EntityMolehill2DRendererFactory() 
+		public function EntityMolehill2DRendererFactory(spriteSheet : SpriteSheet) 
 		{
 			_entityRenderers = new Dictionary(true);
+			_spriteSheet = spriteSheet;
 		}
 		
 		public function getEntityRenderer(entity : Entity2D): EntityMolehill2DRenderer
@@ -36,7 +40,8 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 			if (renderer == null)
 			{
 				var bitmapName : String = entity.type.graphicalAssetName;
-				renderer = new EntityMolehill2DRenderer(entity);
+				var animatedBitmap : AnimatedBitmap = _spriteSheet.getAnimatedBitmap(bitmapName);
+				renderer = new EntityMolehill2DRenderer(entity, animatedBitmap);
 				_entityRenderers[entity] = renderer;
 			}
 			return renderer;

@@ -28,6 +28,10 @@ package as3.ayawaska.engine.renderer.bitmap
 		private var _bitmapDataRectangle:Rectangle;
 		private var _originalPosition:Point;
 		
+		private var _lastX : Number;
+		private var _lastY : Number;
+		private var _lastRectangle : Rectangle;
+		
 		public function BitmapFrame(bitmapData : BitmapData, referencePoint : Point, bitmapDataRectangle : Rectangle = null, originalPosition : Point = null) 
 		{
 			_bitmapData = bitmapData;
@@ -50,6 +54,8 @@ package as3.ayawaska.engine.renderer.bitmap
 			{
 				_originalPosition = originalPosition.clone();
 			}
+			
+			_lastRectangle = getArea(new Point(_lastX, _lastY));
 		}
 		
 		public function get bitmapData() : BitmapData
@@ -85,12 +91,18 @@ package as3.ayawaska.engine.renderer.bitmap
 		
 		public function getArea(position:Point):Rectangle 
 		{
-			var rectangle : Rectangle = new Rectangle();
-			rectangle.x = position.x + _originalPosition.x - _referencePoint.x;
-			rectangle.y = position.y + _originalPosition.y - _referencePoint.y;
-			rectangle.width = _bitmapDataRectangle.width;
-			rectangle.height = _bitmapDataRectangle.height;
-			return rectangle
+			if (position.x != _lastX || position.y != _lastY)
+			{
+				var rectangle : Rectangle = new Rectangle();
+				rectangle.x = position.x + _originalPosition.x - _referencePoint.x;
+				rectangle.y = position.y + _originalPosition.y - _referencePoint.y;
+				rectangle.width = _bitmapDataRectangle.width;
+				rectangle.height = _bitmapDataRectangle.height;
+				_lastRectangle = rectangle;
+				_lastX = position.x;
+				_lastY = position.y;
+			}
+			return _lastRectangle;
 		}
 		
 		

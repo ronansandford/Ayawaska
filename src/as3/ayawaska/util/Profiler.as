@@ -18,7 +18,7 @@ package as3.ayawaska.util
 			if (!_totals[type]) _totals[type] = 0;
 			_totals[type] += time;
 			
-			if (time > 0)
+			if (time > 1)
 			{
 				trace("Profiler - time", type, "time : ", time, "(average : ", Number(_totals[type]) / Number(_iterations[type]), ")");
 				if (time > 90)
@@ -39,7 +39,18 @@ package as3.ayawaska.util
 				_times[type] = getTimer();
 			}
 		}
+		
+		static public function traceTotal(type:String):void 
+		{
+			trace("Profiler - time", type, "total : ", _totals[type], " (average : ", Number(_totals[type]) / Number(_iterations[type]), ")");
+		}
 
+		static public function reset(type:String):void 
+		{
+			delete _totals[type];
+			delete _iterations[type];
+			delete _times[type];
+		}
 		
 	}
 

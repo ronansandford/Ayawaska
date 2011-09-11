@@ -32,7 +32,6 @@ package as3.ayawaska.engine.renderer.bitmap
 		private var _animatedBitmap : AnimatedBitmap;
 		
 		private var _position : Point;
-		private var _rectangle : Rectangle; // keep from instanitating
 		
 		private var _selected : Boolean;
 		
@@ -42,7 +41,6 @@ package as3.ayawaska.engine.renderer.bitmap
 			_animatedBitmap = animatedBitmap;	
 			
 			_position = new Point();
-			_rectangle = new Rectangle();
 		}
 		
 		public function get area() : Rectangle

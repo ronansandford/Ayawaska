@@ -21,6 +21,7 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 	import as3.ayawaska.engine.renderer.bitmap.BitmapFrame;
 	import as3.ayawaska.engine.renderer.bitmap.SpriteSheet;
 	import as3.ayawaska.engine.renderer.bitmap.SpriteSheetManager;
+	import as3.ayawaska.util.Profiler;
 	import com.adobe.utils.AGALMiniAssembler;
 	import as3.ayawaska.engine.core.Entity;
 	import as3.ayawaska.engine.renderer.MouseEnabledRenderer2D;
@@ -47,6 +48,7 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 	import flash.geom.Matrix3D;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
+	import flash.utils.ByteArray;
 	
 	public class Molehill2DRenderer implements MouseEnabledRenderer2D 
 	{
@@ -58,6 +60,7 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 		
 		private var _vertexBuffer:VertexBuffer3D;
 		private var _indexBuffer:IndexBuffer3D;
+		private var _indices : Vector.<uint>
 		
 		private var _viewMatrix:Matrix3D;
 		private var _ready:Boolean;
@@ -69,6 +72,10 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 		private var _spriteSheetManager:SpriteSheetManager;
 		private var _texture:Texture;
 		private var _spriteSheet:SpriteSheet;
+		private var _maxEntitiesNum: uint = 500;
+		
+		private var _entitiesVertices : Vector.<Number>;
+		private var layer0Done: Boolean;
 		
 		
 		public function Molehill2DRenderer(stage : Stage, width : uint, height : uint, world : World2D, entityRendererFactory : EntityMolehill2DRendererFactory, spriteSheetManager : SpriteSheetManager) 
@@ -161,17 +168,30 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
             _context3D.setBlendFactors(Context3DBlendFactor.SOURCE_ALPHA, Context3DBlendFactor.ONE_MINUS_SOURCE_ALPHA);
 			
 			
-			var assets : Vector.<String> = new Vector.<String>;
-			assets.push("grass");
-			assets.push("grass2");
-			assets.push("SmallCluffSnail");
-			assets.push("SmallEdSnail");
-			assets.push("fire");
+			// since all entities are squares we do not need to upload the indices only one but draw only alimited of them every time
+			_indexBuffer = _context3D.createIndexBuffer(_maxEntitiesNum * 6);
+			_indices = new Vector.<uint>();
+			for (var i : uint  = 0; i < _maxEntitiesNum; i++)
+			{
+				//0, 1, 2, 0, 2, 3
+				_indices.push(i * 4 + 0);
+				_indices.push(i * 4 + 1);
+				_indices.push(i * 4 + 2);
+				_indices.push(i * 4 + 0);
+				_indices.push(i * 4 + 2);
+				_indices.push(i * 4 + 3);
+			}
+			_indices.fixed = true;
+			_indexBuffer.uploadFromVector(_indices, 0, _indices.length);
+			
+			
+			var assets : Vector.<String> = Vector.<String>(["grass", "grass2", "SmallCluffSnail", "SmallEdSnail", "fire"]);
 			_spriteSheet = _spriteSheetManager.getSpriteSheet(assets);
 			initTexture(_spriteSheet.bitmapData);
 			
 			_ready = true;
 			
+			_entitiesVertices = new Vector.<Number>(_maxEntitiesNum);
 		}
 		
 		public function initTexture(bitmapData : BitmapData) : void
@@ -189,12 +209,14 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 				return;
 			}
 			
+			
+			Profiler.tick("setVertices");
+			
 			// re initialize
 			_entityUnderMouse = null;
 			
 			
-			var entitiesVertices : Vector.<Number> = new Vector.<Number>();
-			var entitiesIndices : Vector.<uint> = new Vector.<uint>();
+			var entitiesVerticesByteArray : ByteArray = new ByteArray();
 			var drawnEntitiesNum : uint = 0;
 			
 			var entities : Vector.<Vector.<Entity>> = _world.entities;
@@ -204,8 +226,19 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 			var layerCounter : uint = 0;
 			for each(var layer : Vector.<Entity> in entities)
 			{
+				if (layerCounter == 0)
+				{
+					if (layer0Done) 
+					{
+						layerCounter ++;
+						continue;
+					}
+					//else layer0Done = true;
+				}
 				for each (var entity : Entity2D in layer)
 				{
+					//Profiler.tick("setupEntityRenderer");
+					
 					var xOffset : Number = entity.area.x - focusArea.x;
 					var yOffset : Number = entity.area.y - focusArea.y;
 					
@@ -214,59 +247,30 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 					
 					var rectangle : Rectangle = renderer.area
 				
-					var bitmapFrame : BitmapFrame = _spriteSheet.getAnimatedBitmap(entity.type.graphicalAssetName).getBitmapFrame(entity.state, entity.stateLifeTime, entity.rotation);
-					
-					rectangle.width = bitmapFrame.bitmapDataRectangle.width;
-					rectangle.height = bitmapFrame.bitmapDataRectangle.height;
+					//Profiler.tick("setupEntityRenderer");
 					
 					if (rectangle.x > -rectangle.width && rectangle.x < _width && rectangle.y > -rectangle.height && rectangle.y < _height ) // will only render if it fits into (intersects) the display
 					{
+						//Profiler.tick("addVertices");
+						//entitiesVertices = entitiesVertices.concat(renderer.getVertices());
+						renderer.updateVertices(_entitiesVertices, drawnEntitiesNum);
+						//var verticesByteArray : ByteArray = renderer.getVerticesByteArray();
+						//entitiesVerticesByteArray.writeBytes(verticesByteArray);
+						//Profiler.tick("addVertices");
 						
-						
-						var left : Number = bitmapFrame.bitmapDataRectangle.left / bitmapFrame.bitmapData.rect.width;
-						var right : Number = bitmapFrame.bitmapDataRectangle.right  / bitmapFrame.bitmapData.rect.width;
-						var top : Number = bitmapFrame.bitmapDataRectangle.top / bitmapFrame.bitmapData.rect.height;
-						var bottom : Number = bitmapFrame.bitmapDataRectangle.bottom / bitmapFrame.bitmapData.rect.height;
-						
-						entitiesVertices.push(rectangle.left);
-						entitiesVertices.push(rectangle.bottom);
-						entitiesVertices.push(left);
-						entitiesVertices.push(bottom);
-						
-						entitiesVertices.push(rectangle.left);
-						entitiesVertices.push(rectangle.top);
-						entitiesVertices.push(left);
-						entitiesVertices.push(top);
-						
-						entitiesVertices.push(rectangle.right);
-						entitiesVertices.push(rectangle.top);
-						entitiesVertices.push(right);
-						entitiesVertices.push(top);
-		
-						entitiesVertices.push(rectangle.right);
-						entitiesVertices.push(rectangle.bottom);
-						entitiesVertices.push(right);
-						entitiesVertices.push(bottom);
-		
-						//0, 1, 2, 0, 2, 3
-						entitiesIndices.push(drawnEntitiesNum * 4 + 0);
-						entitiesIndices.push(drawnEntitiesNum * 4+ 1);
-						entitiesIndices.push(drawnEntitiesNum * 4 + 2);
-						entitiesIndices.push(drawnEntitiesNum * 4 + 0);
-						entitiesIndices.push(drawnEntitiesNum * 4+ 2);
-						entitiesIndices.push(drawnEntitiesNum * 4+ 3);
-					
 						drawnEntitiesNum++;
 						
+						//Profiler.tick("mouseOver");
 						_position.x = _stage.mouseX;
 						_position.y = _stage.mouseY;
 						if (layerCounter > 0 && rectangle.containsPoint(_position))// do not consider the first layer as clickable/overable (TODO : make it configurable)
 						{
-							//if (renderer.hitTest(_position))
-							//{
+							if (renderer.hitTest(_position))
+							{
 								_entityUnderMouse = entity;
-							//}
+							}
 						}
+						//Profiler.tick("mouseOver");
 					}
 					
 					
@@ -274,28 +278,46 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 				layerCounter ++;
 			}
 			
-			_vertexBuffer = _context3D.createVertexBuffer(entitiesVertices.length /4, 4);
+			Profiler.tick("setVertices");
+			
+			//Profiler.traceTotal("addVertices");
+			//Profiler.reset("addVertices");
+			
+			//Profiler.traceTotal("mouseOver");
+			//Profiler.reset("mouseOver");
+			
+			
+			
+			Profiler.tick("setBuffers");
+			_vertexBuffer = _context3D.createVertexBuffer(_entitiesVertices.length /4, 4);
 			_vertexBuffer.uploadFromVector(
-				entitiesVertices
-				, 0, entitiesVertices.length /4
+				_entitiesVertices
+				, 0, _entitiesVertices.length /4
 			);
 			
+			//_vertexBuffer = _context3D.createVertexBuffer(drawnEntitiesNum * 4, 4);
+			//_vertexBuffer.uploadFromByteArray(
+			//				entitiesVerticesByteArray
+			//				, 0, 0, drawnEntitiesNum * 4
+			//			);
 			
-			_indexBuffer = _context3D.createIndexBuffer(entitiesIndices.length);
-			_indexBuffer.uploadFromVector(entitiesIndices, 0, entitiesIndices.length);
-			
-			
-			
-			_context3D.clear();
 			
 			_context3D.setVertexBufferAt(0, _vertexBuffer, 0, Context3DVertexBufferFormat.FLOAT_2); //xy
 			_context3D.setVertexBufferAt(1, _vertexBuffer, 2, Context3DVertexBufferFormat.FLOAT_2); //uv
 			
+			_indexBuffer = _context3D.createIndexBuffer(drawnEntitiesNum * 6);
+			_indexBuffer.uploadFromVector(_indices.slice(0, drawnEntitiesNum * 6), 0, drawnEntitiesNum * 6);
 			
+			Profiler.tick("setBuffers");
 			
-			_context3D.drawTriangles(_indexBuffer);
-			
+			Profiler.tick("drawTriangles");
+			_context3D.clear();
+			_context3D.drawTriangles(_indexBuffer, 0, drawnEntitiesNum * 2); // since all entities are squares we do not need to upload a new indices vectro every time
 			_context3D.present();
+			Profiler.tick("drawTriangles");
+			
+			
+			//Profiler.tick("context3d");
 		}
 		
 		//interface
