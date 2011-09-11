@@ -21,6 +21,10 @@ package as3.ayawaska.util
 			if (time > 0)
 			{
 				trace("Profiler - time", type, "time : ", time, "(average : ", Number(_totals[type]) / Number(_iterations[type]), ")");
+				if (time > 90)
+				{
+					trace("Too slow!");
+				}
 			}
 			delete _times[type];
 			

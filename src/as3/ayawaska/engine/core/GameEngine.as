@@ -53,9 +53,7 @@ package as3.ayawaska.engine.core
 			var milisecondStep : int = newMilisecondTime - _lastMilisecondTime;
 			_lastMilisecondTime = newMilisecondTime;
 			
-			Profiler.tick("world");
 			_world.update(milisecondStep);
-			Profiler.tick("world");
 			
 			Profiler.tick("renderer");
 			_renderer.update(milisecondStep);

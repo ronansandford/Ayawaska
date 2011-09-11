@@ -18,12 +18,16 @@ Copyright 2011 Ronan Sandford
 */
 package as3.ayawaska.engine.renderer.molehill.twodimensions 
 {
+	import as3.ayawaska.engine.renderer.bitmap.BitmapFrame;
+	import as3.ayawaska.engine.renderer.bitmap.SpriteSheet;
+	import as3.ayawaska.engine.renderer.bitmap.SpriteSheetManager;
 	import com.adobe.utils.AGALMiniAssembler;
 	import as3.ayawaska.engine.core.Entity;
 	import as3.ayawaska.engine.renderer.MouseEnabledRenderer2D;
 	import as3.ayawaska.engine.world.twodimensions.Entity2D;
 	import as3.ayawaska.engine.world.twodimensions.World2D;
 	import flash.display.Bitmap;
+	import flash.display.BitmapData;
 	import flash.display.Stage;
 	import flash.display.Stage3D;
 	import flash.display.StageAlign;
@@ -62,15 +66,19 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 		private var _world: World2D;
 		private var _position: Point;
 		private var _stage: Stage;
+		private var _spriteSheetManager:SpriteSheetManager;
+		private var _texture:Texture;
+		private var _spriteSheet:SpriteSheet;
 		
 		
-		public function Molehill2DRenderer(stage : Stage, width : uint, height : uint, world : World2D, entityRendererFactory : EntityMolehill2DRendererFactory) 
+		public function Molehill2DRenderer(stage : Stage, width : uint, height : uint, world : World2D, entityRendererFactory : EntityMolehill2DRendererFactory, spriteSheetManager : SpriteSheetManager) 
 		{
 			_ready = false;
 			
 			_stage = stage;
 			_world = world;
 			
+			_spriteSheetManager = spriteSheetManager;
 			_entityRendererFactory = entityRendererFactory;
 			
 			stage.scaleMode = StageScaleMode.NO_SCALE;
@@ -124,55 +132,53 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 			vertexAssembler.assemble(flash.display3D.Context3DProgramType.VERTEX, vertexShader.join("\n"));
 			
 			//compile fragment shader
-			/*var fragmentShader:Array =
-			[
-				"mov ft0, v0\n",
-				"tex ft1, ft0, fs1 <2d,clamp,linear>\n", //sample texture 1		
-				"mov oc, ft1\n"
-			];*/
 			var fragmentShader:Array =
 			[
-				"mov oc, v0"
+				"mov ft0, v0",
+				"tex ft1, ft0, fs1 <2d,clamp,linear>", //sample texture 1		
+				"mov oc, ft1"
 			];
+			//var fragmentShader:Array =
+			//[
+			//	"mov oc, v0"
+			//];
 			var fragmentAssembler:AGALMiniAssembler = new AGALMiniAssembler();
 			fragmentAssembler.assemble(Context3DProgramType.FRAGMENT, fragmentShader.join("\n"));
 			
 			_shaderProgram = _context3D.createProgram();
-			_shaderProgram.upload(vertexAssembler.agalcode, fragmentAssembler.agalcode);
-			
-			
-			_vertexBuffer = _context3D.createVertexBuffer(4, 6);
-			_vertexBuffer.uploadFromVector(
-				Vector.<Number>(
-				[
-				0, 0  , 0.4,0,0, 0.5,
-				0, 200  , 0.4,0,0, 0.5,
-				200, 200  , 0.8,0,0, 0.5,
-				200, 0   , 0.8,0,0, 0.5
-				])
-				, 0, 4
-			);
-			
-			
-			_indexBuffer = _context3D.createIndexBuffer(6);
-			_indexBuffer.uploadFromVector(Vector.<uint>([0, 1, 2, 0, 2, 3]), 0, 6);
-			
-			
-			//indices.fixed = true; // improve performance
+			_shaderProgram.upload(vertexAssembler.agalcode, fragmentAssembler.agalcode);	
             
             _viewMatrix = new Matrix3D();
-			//_viewMatrix = new Matrix3D(Vector.<Number>
-			//([
-			//	2/_width, 0  ,       0,        0,
-			//	0  , 2/_height,       0,        0,
-			//	0  , 0  , 1/(100-0), -0/(100-0),
-			//	0  , 0  ,       0,        1
-			//]));
+
 			_viewMatrix.appendTranslation( -(_width * 0.5), -(_height * 0.5) , 0);
             _viewMatrix.appendScale( 1 / (_width * 0.5), -1 / (_height * 0.5), 1 );
 			
+			_context3D.setProgram(_shaderProgram);
+			
+			_context3D.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, _viewMatrix, true);
+			
+			_context3D.setDepthTest(false, Context3DCompareMode.NOT_EQUAL);
+            _context3D.setBlendFactors(Context3DBlendFactor.SOURCE_ALPHA, Context3DBlendFactor.ONE_MINUS_SOURCE_ALPHA);
+			
+			
+			var assets : Vector.<String> = new Vector.<String>;
+			assets.push("grass");
+			assets.push("grass2");
+			assets.push("SmallCluffSnail");
+			assets.push("SmallEdSnail");
+			assets.push("fire");
+			_spriteSheet = _spriteSheetManager.getSpriteSheet(assets);
+			initTexture(_spriteSheet.bitmapData);
+			
 			_ready = true;
 			
+		}
+		
+		public function initTexture(bitmapData : BitmapData) : void
+		{
+			_texture = _context3D.createTexture(bitmapData.width, bitmapData.height, Context3DTextureFormat.BGRA, false);
+			_texture.uploadFromBitmapData(bitmapData);
+			_context3D.setTextureAt(1, _texture);
 		}
 		
 		//interface
@@ -207,49 +213,40 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 					renderer.updatePosition(xOffset, yOffset);
 					
 					var rectangle : Rectangle = renderer.area
+				
+					var bitmapFrame : BitmapFrame = _spriteSheet.getAnimatedBitmap(entity.type.graphicalAssetName).getBitmapFrame(entity.state, entity.stateLifeTime, entity.rotation);
+					
+					rectangle.width = bitmapFrame.bitmapDataRectangle.width;
+					rectangle.height = bitmapFrame.bitmapDataRectangle.height;
 					
 					if (rectangle.x > -rectangle.width && rectangle.x < _width && rectangle.y > -rectangle.height && rectangle.y < _height ) // will only render if it fits into (intersects) the display
 					{
 						
-						var r : Number = 1;
-						var g : Number = 1;
-						var b : Number = 1;
 						
-						if (entity.type.graphicalAssetName == "grass")
-						{
-							r = 0;
-							g = 1;
-							b = 0;
-							//continue;
-						}
+						var left : Number = bitmapFrame.bitmapDataRectangle.left / bitmapFrame.bitmapData.rect.width;
+						var right : Number = bitmapFrame.bitmapDataRectangle.right  / bitmapFrame.bitmapData.rect.width;
+						var top : Number = bitmapFrame.bitmapDataRectangle.top / bitmapFrame.bitmapData.rect.height;
+						var bottom : Number = bitmapFrame.bitmapDataRectangle.bottom / bitmapFrame.bitmapData.rect.height;
 						
 						entitiesVertices.push(rectangle.left);
 						entitiesVertices.push(rectangle.bottom);
-						entitiesVertices.push(r);
-						entitiesVertices.push(g);
-						entitiesVertices.push(b);
-						entitiesVertices.push(1);
+						entitiesVertices.push(left);
+						entitiesVertices.push(bottom);
 						
 						entitiesVertices.push(rectangle.left);
 						entitiesVertices.push(rectangle.top);
-						entitiesVertices.push(r);
-						entitiesVertices.push(g);
-						entitiesVertices.push(b);
-						entitiesVertices.push(1);
-		
+						entitiesVertices.push(left);
+						entitiesVertices.push(top);
+						
 						entitiesVertices.push(rectangle.right);
 						entitiesVertices.push(rectangle.top);
-						entitiesVertices.push(r);
-						entitiesVertices.push(g);
-						entitiesVertices.push(b);
-						entitiesVertices.push(1);
+						entitiesVertices.push(right);
+						entitiesVertices.push(top);
 		
 						entitiesVertices.push(rectangle.right);
 						entitiesVertices.push(rectangle.bottom);
-						entitiesVertices.push(r);
-						entitiesVertices.push(g);
-						entitiesVertices.push(b);
-						entitiesVertices.push(1);
+						entitiesVertices.push(right);
+						entitiesVertices.push(bottom);
 		
 						//0, 1, 2, 0, 2, 3
 						entitiesIndices.push(drawnEntitiesNum * 4 + 0);
@@ -277,10 +274,10 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 				layerCounter ++;
 			}
 			
-			_vertexBuffer = _context3D.createVertexBuffer(entitiesVertices.length /6, 6);
+			_vertexBuffer = _context3D.createVertexBuffer(entitiesVertices.length /4, 4);
 			_vertexBuffer.uploadFromVector(
 				entitiesVertices
-				, 0, entitiesVertices.length /6
+				, 0, entitiesVertices.length /4
 			);
 			
 			
@@ -290,15 +287,11 @@ package as3.ayawaska.engine.renderer.molehill.twodimensions
 			
 			
 			_context3D.clear();
-			_context3D.setProgram(_shaderProgram);
 			
 			_context3D.setVertexBufferAt(0, _vertexBuffer, 0, Context3DVertexBufferFormat.FLOAT_2); //xy
-			_context3D.setVertexBufferAt(1, _vertexBuffer, 2, Context3DVertexBufferFormat.FLOAT_4); //rgba
+			_context3D.setVertexBufferAt(1, _vertexBuffer, 2, Context3DVertexBufferFormat.FLOAT_2); //uv
 			
-			_context3D.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 0, _viewMatrix, true);
 			
-			_context3D.setDepthTest(false, Context3DCompareMode.NOT_EQUAL);
-            _context3D.setBlendFactors(Context3DBlendFactor.SOURCE_ALPHA, Context3DBlendFactor.ONE_MINUS_SOURCE_ALPHA);
 			
 			_context3D.drawTriangles(_indexBuffer);
 			

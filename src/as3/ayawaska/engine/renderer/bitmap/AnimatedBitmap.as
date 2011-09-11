@@ -111,6 +111,11 @@ package as3.ayawaska.engine.renderer.bitmap
 				return rotations[0];
 			}
 		}
+		
+		internal function get states() : Dictionary
+		{
+			return _states;
+		}
 
 	}
 

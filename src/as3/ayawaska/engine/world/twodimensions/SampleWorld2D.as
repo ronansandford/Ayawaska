@@ -20,6 +20,7 @@ package as3.ayawaska.engine.world.twodimensions
 {
 	import as3.ayawaska.engine.core.Entity;
 	import as3.ayawaska.engine.core.EntityType;
+	import as3.ayawaska.util.Profiler;
 	import flash.geom.Rectangle;
 
 	public class SampleWorld2D implements World2D 
@@ -44,6 +45,7 @@ package as3.ayawaska.engine.world.twodimensions
 		// interface
 		public function update(milisecondStep : int) : void
 		{
+			Profiler.tick("world");
 			for each(var layer : Vector.<Entity> in _entities)
 			{
 				for each (var entity : Entity2D in layer)
@@ -63,9 +65,7 @@ package as3.ayawaska.engine.world.twodimensions
 				}
 			}
 			
-			// simple camera
-			//_focusArea.x += 1;
-			//_focusArea.y += 1;
+			Profiler.tick("world");
 		}
 		
 		// interface
